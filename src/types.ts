@@ -15,7 +15,7 @@ export interface RawRule {
   action?: string;
   enabled?: boolean;
   metadata?: Record<string, unknown>;
-  commentHistoryList?: Array<{ comment: string; createdBy?: string; createdOn?: string }>;
+  commentHistoryList?: Array<{ comment?: string; createdBy?: string; createdOn?: string; user?: { name?: string } | null; date?: string }>;;
   ruleIndex?: number;
   section?: { name?: string };
   sourceZones?: { items?: NamedEntity[] };
@@ -54,6 +54,12 @@ export interface NamedEntity {
   url?: string;
 }
 
+export interface RuleComment {
+  text: string;
+  user?: string;
+  date?: string;
+}
+
 export interface RuleRow {
   policyName: string;
   policyId: string;
@@ -85,7 +91,7 @@ export interface RuleRow {
   logFiles: boolean | null;
   enableSyslog: boolean | null;
   sendEventsToFMC: boolean | null;
-  comments: string[];
+  comments: RuleComment[];
 }
 
 export interface RuleFilters {

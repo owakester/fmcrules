@@ -1,9 +1,9 @@
 ﻿<template>
   <div class="bg-slate-900/60 border border-slate-800 rounded-xl">
-    <div v-if="loading" class="p-6 text-center text-sm text-slate-400">
+    <div v-if="isLoading" class="p-6 text-center text-sm text-slate-400">
       Cargando informacion de reglas...
     </div>
-    <div v-else-if="!rules.length" class="p-6 text-center text-sm text-slate-400">
+    <div v-else-if="!visibleRules.length" class="p-6 text-center text-sm text-slate-400">
       No se encontraron reglas con los filtros actuales.
     </div>
     <div v-else class="overflow-x-auto">
@@ -22,7 +22,7 @@
         </thead>
         <tbody class="divide-y divide-slate-800 text-sm">
           <tr
-            v-for="rule in rules"
+            v-for="rule in visibleRules"
             :key="rule.ruleId || `${rule.policyId}-${rule.index}`"
             class="hover:bg-slate-950/60"
           >
@@ -51,16 +51,16 @@
                 class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
                 :class="actionPill(rule.action)"
               >
-                {{ rule.action || "N/A" }}
+                {{ rule.action || 'N/A' }}
               </span>
             </td>
             <td class="px-4 py-3 align-top">
               <span
-                class="inline-flex items-center gap-2 text-xs font-medium"
+                class="inline-flex items-center gap-2 text-xs text-slate-300"
                 :class="rule.enabled ? 'text-emerald-300' : 'text-slate-500'"
               >
                 <span class="inline-flex h-2 w-2 rounded-full" :class="rule.enabled ? 'bg-emerald-400' : 'bg-slate-600'" />
-                {{ rule.enabled ? "Activa" : "Inactiva" }}
+                {{ rule.enabled ? 'Activa' : 'Inactiva' }}
               </span>
               <div class="text-xs text-slate-500 mt-2 space-y-1">
                 <p>Log inicio: {{ boolLabel(rule.logBegin) }}</p>
@@ -86,10 +86,15 @@
             </td>
             <td class="px-4 py-3 align-top max-w-xs">
               <ul class="space-y-2">
-                <li v-for="(comment, index) in rule.comments ?? []" :key="index" class="text-xs text-slate-300">
-                  {{ comment }}
+                <li v-for="(comment, index) in rule.comments" :key="index" class="text-xs text-slate-300">
+                  <p>{{ comment.text || 'Sin comentario' }}</p>
+                  <p v-if="comment.user || comment.date" class="text-[11px] text-slate-500">
+                    <span v-if="comment.user">{{ comment.user }}</span>
+                    <span v-if="comment.user && comment.date"> - </span>
+                    <span v-if="comment.date">{{ formatCommentDate(comment.date) }}</span>
+                  </p>
                 </li>
-                <li v-if="!((rule.comments ?? []).length)" class="text-xs text-slate-500">Sin comentarios</li>
+                <li v-if="!rule.comments.length" class="text-xs text-slate-500">Sin comentarios</li>
               </ul>
             </td>
           </tr>
@@ -100,6 +105,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import type { RuleRow } from "../types";
 
 interface Props {
@@ -111,6 +117,9 @@ const props = withDefaults(defineProps<Props>(), {
   rules: () => [],
   loading: false,
 });
+
+const visibleRules = computed(() => props.rules);
+const isLoading = computed(() => props.loading);
 
 function formatList(values: readonly string[] | undefined): string {
   if (!Array.isArray(values) || !values.length) {
@@ -138,5 +147,16 @@ function actionPill(action: string): string {
     return "bg-rose-500/20 text-rose-200";
   }
   return "bg-slate-700/40 text-slate-200";
+}
+
+function formatCommentDate(value?: string): string {
+  if (!value) {
+    return "";
+  }
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleString();
+  }
+  return value;
 }
 </script>

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="max-w-7xl mx-auto px-4 py-8 space-y-6">
     <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -73,7 +73,7 @@
       <div v-if="error" class="p-4 rounded-md border border-red-500/30 bg-red-500/10 text-red-200 text-sm">
         {{ error }}
       </div>
-      <RuleTable :rules="rules.value" :loading="loading.value" />\n      <pre class="text-xs text-slate-500 whitespace-pre-wrap">{{ JSON.stringify(rules.value.slice(0,5), null, 2) }}</pre>
+      <RuleTable :rules="rules" :loading="loading" />
     </section>
   </div>
 </template>
@@ -84,6 +84,8 @@ import RuleTable from "./components/RuleTable.vue";
 import { usePolicies } from "./composables/usePolicies";
 
 const { loading, error, rules, filters, policyOptions, actionOptions, reload } = usePolicies();
+
+
 
 const statusMessage = computed(() => {
   if (loading.value) {
@@ -97,6 +99,8 @@ async function handleReload() {
   await reload();
 }
 </script>
+
+
 
 
 
