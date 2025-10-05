@@ -109,17 +109,28 @@ import { computed } from "vue";
 import type { RuleRow } from "../types";
 
 interface Props {
-  rules: RuleRow[];
-  loading: boolean;
+  rules: RuleRow[] | Readonly<{ value: RuleRow[] }>;
+  loading: boolean | Readonly<{ value: boolean }>;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  rules: () => [],
-  loading: false,
-});
+const props = defineProps<Props>();
 
-const visibleRules = computed(() => props.rules);
-const isLoading = computed(() => props.loading);
+function unwrapRules(source: Props["rules"]): RuleRow[] {
+  if (Array.isArray(source)) {
+    return source;
+  }
+  return source?.value ?? [];
+}
+
+function unwrapLoading(source: Props["loading"]): boolean {
+  if (typeof source === "boolean") {
+    return source;
+  }
+  return source?.value ?? false;
+}
+
+const visibleRules = computed(() => unwrapRules(props.rules));
+const isLoading = computed(() => unwrapLoading(props.loading));
 
 function formatList(values: readonly string[] | undefined): string {
   if (!Array.isArray(values) || !values.length) {
@@ -160,3 +171,4 @@ function formatCommentDate(value?: string): string {
   return value;
 }
 </script>
+

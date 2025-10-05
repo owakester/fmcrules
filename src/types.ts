@@ -15,7 +15,7 @@ export interface RawRule {
   action?: string;
   enabled?: boolean;
   metadata?: Record<string, unknown>;
-  commentHistoryList?: Array<{ comment?: string; createdBy?: string; createdOn?: string; user?: { name?: string } | null; date?: string }>;;
+  commentHistoryList?: Array<{ comment?: string; createdBy?: string; createdOn?: string; user?: { name?: string } | null; date?: string }>;
   ruleIndex?: number;
   section?: { name?: string };
   sourceZones?: { items?: NamedEntity[] };
@@ -99,4 +99,49 @@ export interface RuleFilters {
   policyId: string | null;
   action: string | null;
   enabledOnly: boolean;
+}
+
+export interface FieldChange {
+  field: keyof RuleRow;
+  label: string;
+  previous: string;
+  current: string;
+}
+
+export interface ModifiedRuleChange {
+  key: string;
+  policyId: string;
+  policyName: string;
+  ruleId: string;
+  ruleName: string;
+  baseline: RuleRow;
+  current: RuleRow;
+  changes: FieldChange[];
+}
+
+export interface RuleChangeSummary {
+  totalCurrentRules: number;
+  totalBaselineRules: number;
+  addedRules: number;
+  removedRules: number;
+  modifiedRules: number;
+}
+
+export interface RuleChangeReport {
+  summary: RuleChangeSummary;
+  added: RuleRow[];
+  removed: RuleRow[];
+  modified: ModifiedRuleChange[];
+  baselineHash: string;
+  currentHash: string;
+  baselineLabel: string;
+  currentLabel: string;
+}
+
+export interface ChangeHistoryEntry {
+  id: string;
+  timestamp: string;
+  baselineLabel: string;
+  currentLabel: string;
+  report: RuleChangeReport;
 }

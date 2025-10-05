@@ -1506,7 +1506,7 @@
               "type": "User"
             },
             "date": "2023-10-09T00:56:35.000+0000",
-            "comment": "Regla No. rq2355 por carlos bohorquez"
+            "comment": "Regla No. rq2355"
           },
           {
             "user": {
@@ -3740,7 +3740,7 @@
             {
               "type": "Network",
               "overridable": false,
-              "name": "10.11.113.0",
+              "name": "10.11.112.0",
               "id": "005056BF-7B88-0ed3-0000-017180070076"
             }
           ]
@@ -3840,7 +3840,7 @@
       },
       "name": "Allow HTTP/HTTPS to Web Server",
       "defaultAction": {
-        "action": "ALLOW",
+        "action": "BLOCK",
         "type": "AccessPolicyDefaultAction",
         "logBegin": false,
         "logEnd": false,
@@ -23661,7 +23661,7 @@
               "type": "User"
             },
             "date": "2023-11-14T18:19:32.000+0000",
-            "comment": "Commentario CARLOS BOHORQUEZ"
+            "comment": "Commentario"
           }
         ],
         "enableSyslog": true,
