@@ -1,0 +1,1 @@
+﻿Coloca aqui el archivo policies.json generado desde el script de exportacion.
