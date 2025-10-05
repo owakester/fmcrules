@@ -271,6 +271,12 @@ export function flattenPolicies(policies: RawPolicy[]): RuleRow[] {
 
 
 function transformRule(policy: RawPolicy["policy"], rule: RawRule): RuleRow {
+  const defaultAction = (policy as any)?.defaultAction ?? {};
+  const defaultActionAction = typeof defaultAction?.action === "string" ? defaultAction.action.toUpperCase() : "";
+  const defaultLogBegin = normalizeBool(defaultAction?.logBegin);
+  const defaultLogEnd = normalizeBool(defaultAction?.logEnd);
+  const defaultEnableSyslog = normalizeBool(defaultAction?.enableSyslog);
+  const defaultSendEvents = normalizeBool(defaultAction?.sendEventsToFMC);
 
   return {
 
@@ -279,6 +285,16 @@ function transformRule(policy: RawPolicy["policy"], rule: RawRule): RuleRow {
     policyId: policy.id ?? "",
 
     policyDescription: policy.description ?? "",
+
+    policyDefaultAction: defaultActionAction,
+
+    policyDefaultLogBegin: defaultLogBegin,
+
+    policyDefaultLogEnd: defaultLogEnd,
+
+    policyDefaultEnableSyslog: defaultEnableSyslog,
+
+    policyDefaultSendEventsToFMC: defaultSendEvents,
 
     ruleName: rule.name ?? "Sin nombre",
 

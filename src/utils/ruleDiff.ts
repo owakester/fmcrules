@@ -60,6 +60,11 @@ function formatBoolean(value: boolean | null): string {
 }
 
 const FIELD_DEFINITIONS: Array<{ field: keyof RuleRow; label: string }> = [
+  { field: "policyDefaultAction", label: "Accion por defecto" },
+  { field: "policyDefaultLogBegin", label: "Log inicio por defecto" },
+  { field: "policyDefaultLogEnd", label: "Log fin por defecto" },
+  { field: "policyDefaultEnableSyslog", label: "Syslog por defecto" },
+  { field: "policyDefaultSendEventsToFMC", label: "Eventos FMC por defecto" },
   { field: "action", label: "Acción" },
   { field: "enabled", label: "Estado" },
   { field: "section", label: "Sección" },

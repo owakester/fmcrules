@@ -64,6 +64,11 @@ export interface RuleRow {
   policyName: string;
   policyId: string;
   policyDescription: string;
+  policyDefaultAction: string;
+  policyDefaultLogBegin: boolean | null;
+  policyDefaultLogEnd: boolean | null;
+  policyDefaultEnableSyslog: boolean | null;
+  policyDefaultSendEventsToFMC: boolean | null;
   ruleName: string;
   ruleId: string;
   action: string;

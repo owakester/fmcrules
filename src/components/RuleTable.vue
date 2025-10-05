@@ -29,6 +29,9 @@
             <td class="px-4 py-3 align-top">
               <p class="font-medium text-slate-200">{{ rule.policyName }}</p>
               <p class="text-xs text-slate-500">{{ rule.policyDescription || rule.policyId }}</p>
+              <p class="text-xs text-slate-500">Default: {{ rule.policyDefaultAction || '-' }}</p>
+              <p class="text-[11px] text-slate-500">Log inicio: {{ boolLabel(rule.policyDefaultLogBegin) }} · Log fin: {{ boolLabel(rule.policyDefaultLogEnd) }}</p>
+              <p class="text-[11px] text-slate-500">Syslog: {{ boolLabel(rule.policyDefaultEnableSyslog) }} · Eventos FMC: {{ boolLabel(rule.policyDefaultSendEventsToFMC) }}</p>
             </td>
             <td class="px-4 py-3 align-top">
               <p class="font-medium text-slate-200">{{ rule.ruleName }}</p>

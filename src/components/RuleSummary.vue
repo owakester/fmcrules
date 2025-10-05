@@ -2,6 +2,12 @@
   <div class="space-y-1 text-sm text-slate-200">
     <p class="font-semibold">{{ rule.policyName }} - {{ rule.ruleName }}</p>
     <p class="text-xs text-slate-400">Accion: {{ rule.action }} - Estado: {{ rule.enabled ? 'Activa' : 'Inactiva' }}</p>
+    <p class="text-[11px] text-slate-500">
+      Default: {{ rule.policyDefaultAction || '-' }} · Log inicio: {{ formatBool(rule.policyDefaultLogBegin) }} · Log fin: {{ formatBool(rule.policyDefaultLogEnd) }}
+    </p>
+    <p class="text-[11px] text-slate-500">
+      Syslog: {{ formatBool(rule.policyDefaultEnableSyslog) }} · Eventos FMC: {{ formatBool(rule.policyDefaultSendEventsToFMC) }}
+    </p>
     <div class="grid gap-1 text-xs text-slate-400 sm:grid-cols-2">
       <p><span class="text-slate-500">Origen:</span> {{ formatList(rule.sourceNetworks) }}</p>
       <p><span class="text-slate-500">Destino:</span> {{ formatList(rule.destinationNetworks) }}</p>
@@ -26,5 +32,15 @@ const props = defineProps<{ rule: RuleRow }>();
 
 function formatList(values: string[]): string {
   return values.length ? values.join(", ") : "-";
+}
+
+function formatBool(value: boolean | null | undefined): string {
+  if (value === true) {
+    return "Si";
+  }
+  if (value === false) {
+    return "No";
+  }
+  return "N/D";
 }
 </script>

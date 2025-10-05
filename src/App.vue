@@ -84,7 +84,7 @@
     </div>
 
     <div v-else>
-      <ChangeTrackingView :rules="allRules.value" :loading="loading" />
+      <ChangeTrackingView :rules="allRules" :loading="loading" />
     </div>
   </div>
 </template>
