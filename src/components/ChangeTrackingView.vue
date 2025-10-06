@@ -32,6 +32,13 @@
         >
           Limpiar historial
         </button>
+        <button
+          class="rounded-md border border-slate-700 px-3 py-2 hover:bg-slate-800"
+          :disabled="!canExportCsv"
+          @click="exportCsvReport"
+        >
+          Exportar cambios (CSV)
+        </button>
       </div>
     </header>
 
@@ -80,6 +87,11 @@
         <div class="space-y-3" v-else>
           <div v-for="rule in report.added" :key="'added-' + rule.policyId + rule.ruleId" class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
             <RuleSummary :rule="rule" />
+            <ul v-if="describeAddedRule(rule).length" class="mt-2 space-y-1 text-[11px] text-emerald-100">
+              <li v-for="(line, idx) in describeAddedRule(rule)" :key="'added-desc-' + rule.policyId + rule.ruleId + idx">
+                {{ line }}
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -90,6 +102,11 @@
         <div class="space-y-3" v-else>
           <div v-for="rule in report.removed" :key="'removed-' + rule.policyId + rule.ruleId" class="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3">
             <RuleSummary :rule="rule" />
+            <ul v-if="describeRemovedRule(rule).length" class="mt-2 space-y-1 text-[11px] text-rose-100">
+              <li v-for="(line, idx) in describeRemovedRule(rule)" :key="'removed-desc-' + rule.policyId + rule.ruleId + idx">
+                {{ line }}
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -104,6 +121,11 @@
             </summary>
             <div class="space-y-2 px-3 pb-3 text-xs text-slate-200">
               <RuleSummary :rule="item.current" />
+              <ul v-if="describeModifiedRuleChange(item).length" class="space-y-1 rounded-md border border-sky-500/30 bg-sky-500/10 p-3 text-[11px] text-sky-100">
+                <li v-for="(line, idx) in describeModifiedRuleChange(item)" :key="'mod-desc-' + item.key + idx">
+                  {{ line }}
+                </li>
+              </ul>
               <div class="overflow-x-auto">
                 <table class="min-w-full text-left text-slate-200">
                   <thead class="text-[11px] uppercase tracking-wider text-slate-400">
@@ -163,7 +185,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, withDefaults } from "vue";
-import type { ChangeHistoryEntry, RuleChangeReport, RuleRow } from "../types";
+import type { ChangeHistoryEntry, ModifiedRuleChange, RuleChangeReport, RuleRow } from "../types";
 import { diffRuleSets } from "../utils/ruleDiff";
 import RuleSummary from "./RuleSummary.vue";
 import { flattenPolicies } from "../composables/usePolicies";
@@ -228,6 +250,14 @@ const report = computed<RuleChangeReport | null>(() => {
   diff.baselineLabel = baselineLabel.value;
   diff.currentLabel = `Snapshot actual (${new Date().toLocaleString()})`;
   return diff;
+});
+
+const canExportCsv = computed(() => {
+  const current = report.value;
+  if (!current) {
+    return false;
+  }
+  return current.added.length > 0 || current.modified.length > 0 || current.removed.length > 0;
 });
 
 const history = ref<ChangeHistoryEntry[]>(loadHistory());
@@ -298,6 +328,296 @@ function formatDate(value: string): string {
     return value;
   }
   return date.toLocaleString();
+}
+
+const ARRAY_FIELDS = new Set<keyof RuleRow>([
+  "sourceZones",
+  "destinationZones",
+  "sourceNetworks",
+  "destinationNetworks",
+  "sourceDynamicObjects",
+  "destinationDynamicObjects",
+  "sourcePorts",
+  "destinationPorts",
+  "applications",
+  "urls",
+  "variableSet",
+  "ipsPolicy",
+  "filePolicy",
+  "timeRanges",
+  "securityGroupTags",
+  "snmpAlerts",
+]);
+
+const BOOLEAN_FIELDS = new Set<keyof RuleRow>([
+  "policyDefaultLogBegin",
+  "policyDefaultLogEnd",
+  "policyDefaultEnableSyslog",
+  "policyDefaultSendEventsToFMC",
+  "logBegin",
+  "logEnd",
+  "logFiles",
+  "enableSyslog",
+  "sendEventsToFMC",
+]);
+
+function describeAddedRule(rule: RuleRow): string[] {
+  const lines: string[] = [];
+  lines.push(`Regla nueva con accion ${rule.action || "-"} (${rule.enabled ? "activa" : "inactiva"}).`);
+  const originSummary = summarizeArrayField(rule.sourceNetworks, "Origen");
+  if (originSummary) {
+    lines.push(originSummary);
+  }
+  const destinationSummary = summarizeArrayField(rule.destinationNetworks, "Destino");
+  if (destinationSummary) {
+    lines.push(destinationSummary);
+  }
+  const destinationPortsSummary = summarizeArrayField(rule.destinationPorts, "Puertos destino");
+  if (destinationPortsSummary) {
+    lines.push(destinationPortsSummary);
+  }
+  const applicationSummary = summarizeArrayField(rule.applications, "Aplicaciones");
+  if (applicationSummary) {
+    lines.push(applicationSummary);
+  }
+  return lines;
+}
+
+function describeRemovedRule(rule: RuleRow): string[] {
+  const lines: string[] = [];
+  lines.push(`Se elimino la regla con accion ${rule.action || "-"} (${rule.enabled ? "activa" : "inactiva"}).`);
+  const destinationSummary = summarizeArrayField(rule.destinationNetworks, "Destino previo");
+  if (destinationSummary) {
+    lines.push(destinationSummary);
+  }
+  const applicationSummary = summarizeArrayField(rule.applications, "Aplicaciones previas");
+  if (applicationSummary) {
+    lines.push(applicationSummary);
+  }
+  return lines;
+}
+
+function describeModifiedRuleChange(item: ModifiedRuleChange): string[] {
+  const lines: string[] = [];
+  item.changes.forEach((change) => {
+    const field = change.field;
+    if (ARRAY_FIELDS.has(field)) {
+      const before = toStringArray(item.baseline[field]);
+      const after = toStringArray(item.current[field]);
+      const { added, removed } = diffArray(before, after);
+      const target = change.label.toLowerCase();
+      if (added.length) {
+        lines.push(`${added.length > 1 ? "Se agregaron" : "Se agrego"} ${formatListForSentence(added)} a ${target}.`);
+      }
+      if (removed.length) {
+        lines.push(`${removed.length > 1 ? "Se eliminaron" : "Se elimino"} ${formatListForSentence(removed)} de ${target}.`);
+      }
+      if (!added.length && !removed.length) {
+        lines.push(`Se actualizo ${target}.`);
+      }
+      return;
+    }
+    if (BOOLEAN_FIELDS.has(field)) {
+      lines.push(
+        `${change.label} se configuro en ${formatBooleanForCsv(item.current[field] as boolean | null)} (antes ${formatBooleanForCsv(item.baseline[field] as boolean | null)}).`
+      );
+      return;
+    }
+    if (field === "index") {
+      const previousIndex = item.baseline.index ?? "-";
+      const currentIndex = item.current.index ?? "-";
+      lines.push(`La regla cambio de posicion ${previousIndex} a ${currentIndex}.`);
+      return;
+    }
+    if (field === "comments") {
+      const beforeCount = item.baseline.comments.length;
+      const afterCount = item.current.comments.length;
+      if (afterCount > beforeCount) {
+        lines.push(`Se agregaron comentarios (total ${afterCount}).`);
+      } else if (afterCount < beforeCount) {
+        lines.push(`Se eliminaron comentarios (total ${afterCount}).`);
+      } else {
+        lines.push("Se actualizaron los comentarios de la regla.");
+      }
+      return;
+    }
+    lines.push(`Se actualizo ${change.label.toLowerCase()} de ${change.previous || "-"} a ${change.current || "-"}.`);
+  });
+  return lines;
+}
+
+function summarizeArrayField(values: string[], label: string): string | null {
+  if (!values || !values.length) {
+    return null;
+  }
+  const list = values.slice(0, 3);
+  const formatted = formatListForSentence(list);
+  const extra = values.length > 3 ? ` (+${values.length - 3} mas)` : "";
+  return `${label}: ${formatted}${extra}.`;
+}
+
+function diffArray(before: string[], after: string[]) {
+  const beforeSet = new Set(before);
+  const afterSet = new Set(after);
+  const added = after.filter((value) => !beforeSet.has(value));
+  const removed = before.filter((value) => !afterSet.has(value));
+  return { added, removed };
+}
+
+function toStringArray(value: RuleRow[keyof RuleRow]): string[] {
+  if (!value) {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.map(String).filter((entry) => entry.trim().length > 0);
+  }
+  return String(value).split(",").map((entry) => entry.trim()).filter((entry) => entry.length > 0);
+}
+
+function formatListForSentence(values: string[]): string {
+  if (!values.length) {
+    return "-";
+  }
+  if (values.length === 1) {
+    return values[0];
+  }
+  if (values.length === 2) {
+    return `${values[0]} y ${values[1]}`;
+  }
+  return `${values.slice(0, -1).join(", ")} y ${values[values.length - 1]}`;
+}
+
+function exportCsvReport() {
+  const current = report.value;
+  if (!current || !canExportCsv.value) {
+    return;
+  }
+
+  const rows: string[][] = [];
+  rows.push([
+    "Tipo",
+    "Politica",
+    "Regla",
+    "Accion",
+    "Estado",
+    "Default Action",
+    "Default Log Begin",
+    "Default Log End",
+    "Origen",
+    "Destino",
+    "Puertos Origen",
+    "Puertos Destino",
+    "Aplicaciones",
+    "Comentarios",
+    "Cambios",
+  ]);
+
+  current.added.forEach((rule) => {
+    rows.push(buildCsvRow(rule, "Agregada", describeAddedRule(rule)));
+  });
+
+  current.modified.forEach((item) => {
+    const description = describeModifiedRuleChange(item);
+    rows.push(buildCsvRow(item.current, "Modificada", description.length ? description : ["Cambios detectados"]));
+  });
+
+  current.removed.forEach((rule) => {
+    rows.push(buildCsvRow(rule, "Eliminada", describeRemovedRule(rule)));
+  });
+
+  if (rows.length === 1) {
+    return;
+  }
+
+  const csvContent = rows
+    .map((columns) => columns.map(escapeCsvValue).join(","))
+    .join("\r\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const fileName = `change-tracking-${formatDateSuffix(new Date())}.csv`;
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function buildCsvRow(rule: RuleRow, type: string, changeSummary: string[]): string[] {
+  return [
+    type,
+    rule.policyName || "-",
+    rule.ruleName || rule.ruleId || "-",
+    rule.action || "-",
+    rule.enabled ? "Activa" : "Inactiva",
+    rule.policyDefaultAction || "-",
+    formatBooleanForCsv(rule.policyDefaultLogBegin),
+    formatBooleanForCsv(rule.policyDefaultLogEnd),
+    formatListForCsv(rule.sourceNetworks),
+    formatListForCsv(rule.destinationNetworks),
+    formatListForCsv(rule.sourcePorts),
+    formatListForCsv(rule.destinationPorts),
+    formatListForCsv(rule.applications),
+    formatCommentsForCsv(rule.comments),
+    changeSummary.length ? changeSummary.join(" | ") : "-",
+  ];
+}
+
+function formatListForCsv(values: string[]): string {
+  return values && values.length ? values.join("; ") : "-";
+}
+
+function formatBooleanForCsv(value: boolean | null | undefined): string {
+  if (value === true) {
+    return "Si";
+  }
+  if (value === false) {
+    return "No";
+  }
+  return "N/D";
+}
+
+function formatCommentsForCsv(comments: RuleRow["comments"]): string {
+  if (!comments || !comments.length) {
+    return "-";
+  }
+  return comments
+    .map((comment) => {
+      const parts: string[] = [];
+      if (comment.text) {
+        parts.push(comment.text);
+      }
+      const meta: string[] = [];
+      if (comment.user) {
+        meta.push(comment.user);
+      }
+      if (comment.date) {
+        meta.push(comment.date);
+      }
+      if (meta.length) {
+        parts.push(`(${meta.join(" - ")})`);
+      }
+      return parts.join(" ");
+    })
+    .join(" | ");
+}
+
+function escapeCsvValue(value: string): string {
+  const safeValue = value.replace(/\r?\n/g, " ").replace(/\r/g, " ");
+  return `"${safeValue.replace(/"/g, '""')}"`;
+}
+
+function formatDateSuffix(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  return `${year}${month}${day}-${hours}${minutes}${seconds}`;
 }
 
 async function reloadDefaultBaseline() {

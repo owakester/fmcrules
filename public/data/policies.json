@@ -190,7 +190,7 @@
             },
             "id": "005056BF-7B88-0ed3-0000-017187490600"
           },
-          "timestamp": 1759576561350,
+          "timestamp": 1759730605003,
           "domain": {
             "name": "Global",
             "id": "e276abec-e0f2-11e3-8169-6d9ed49b625f",
@@ -242,6 +242,152 @@
       {
         "metadata": {
           "ruleIndex": 3,
+          "section": "Mandatory",
+          "category": "--Undefined--",
+          "accessPolicy": {
+            "type": "AccessPolicy",
+            "name": "Access_Control_Policy",
+            "defaultAction": {
+              "type": "AccessPolicyDefaultAction",
+              "logBegin": false,
+              "logEnd": false,
+              "enableSyslog": false,
+              "sendEventsToFMC": false
+            },
+            "id": "005056BF-7B88-0ed3-0000-017187490600"
+          },
+          "timestamp": 1759730604996,
+          "domain": {
+            "name": "Global",
+            "id": "e276abec-e0f2-11e3-8169-6d9ed49b625f",
+            "type": "Domain"
+          }
+        },
+        "links": {
+          "self": "https://fmcrestapisandbox.cisco.com/api/fmc_config/v1/domain/e276abec-e0f2-11e3-8169-6d9ed49b625f/policy/accesspolicies/005056BF-7B88-0ed3-0000-017187490600/accessrules/005056BF-7B88-0ed3-0000-000268441608"
+        },
+        "action": "ALLOW",
+        "name": "testrule",
+        "type": "AccessRule",
+        "enabled": true,
+        "id": "005056BF-7B88-0ed3-0000-000268441608",
+        "vlanTags": {},
+        "logBegin": false,
+        "logEnd": true,
+        "variableSet": {
+          "name": "Default-Set",
+          "id": "76fa83ea-c972-11e2-8be8-8e45bb1343c0",
+          "type": "VariableSet"
+        },
+        "logFiles": false,
+        "destinationPorts": {
+          "objects": [
+            {
+              "type": "ICMPV4Object",
+              "overridable": false,
+              "name": "PING-ECHO",
+              "id": "005056BF-7B88-0ed3-0000-017180865686"
+            }
+          ]
+        },
+        "enableSyslog": false,
+        "sourceNetworks": {
+          "objects": [
+            {
+              "type": "Network",
+              "overridable": false,
+              "name": "10.11.112.0",
+              "id": "005056BF-7B88-0ed3-0000-017180070076"
+            }
+          ]
+        },
+        "destinationNetworks": {
+          "literals": [
+            {
+              "type": "Host",
+              "value": "10.38.16.18"
+            }
+          ]
+        },
+        "sendEventsToFMC": true,
+        "sourceDynamicObjects": {},
+        "destinationDynamicObjects": {}
+      },
+      {
+        "metadata": {
+          "ruleIndex": 4,
+          "section": "Mandatory",
+          "category": "--Undefined--",
+          "accessPolicy": {
+            "type": "AccessPolicy",
+            "name": "Access_Control_Policy",
+            "defaultAction": {
+              "type": "AccessPolicyDefaultAction",
+              "logBegin": false,
+              "logEnd": false,
+              "enableSyslog": false,
+              "sendEventsToFMC": false
+            },
+            "id": "005056BF-7B88-0ed3-0000-017187490600"
+          },
+          "timestamp": 1759730604996,
+          "domain": {
+            "name": "Global",
+            "id": "e276abec-e0f2-11e3-8169-6d9ed49b625f",
+            "type": "Domain"
+          }
+        },
+        "links": {
+          "self": "https://fmcrestapisandbox.cisco.com/api/fmc_config/v1/domain/e276abec-e0f2-11e3-8169-6d9ed49b625f/policy/accesspolicies/005056BF-7B88-0ed3-0000-017187490600/accessrules/005056BF-7B88-0ed3-0000-000268441609"
+        },
+        "action": "MONITOR",
+        "name": "testrule1",
+        "type": "AccessRule",
+        "enabled": true,
+        "id": "005056BF-7B88-0ed3-0000-000268441609",
+        "vlanTags": {},
+        "logBegin": false,
+        "logEnd": true,
+        "variableSet": {
+          "name": "Default-Set",
+          "id": "76fa83ea-c972-11e2-8be8-8e45bb1343c0",
+          "type": "VariableSet"
+        },
+        "logFiles": false,
+        "destinationPorts": {
+          "objects": [
+            {
+              "type": "ICMPV4Object",
+              "overridable": false,
+              "name": "PING-ECHO",
+              "id": "005056BF-7B88-0ed3-0000-017180865686"
+            }
+          ]
+        },
+        "enableSyslog": false,
+        "sourceNetworks": {
+          "literals": [
+            {
+              "type": "Host",
+              "value": "10.11.113.0"
+            }
+          ]
+        },
+        "destinationNetworks": {
+          "literals": [
+            {
+              "type": "Host",
+              "value": "10.38.16.19"
+            }
+          ]
+        },
+        "sendEventsToFMC": true,
+        "sourceDynamicObjects": {},
+        "destinationDynamicObjects": {}
+      },
+      {
+        "metadata": {
+          "ruleIndex": 5,
           "section": "Default",
           "category": "--Undefined--",
           "accessPolicy": {
@@ -930,7 +1076,7 @@
         "id": "005056BF-7B88-0ed3-0000-000268435521",
         "vlanTags": {},
         "ipsPolicy": {
-          "name": "DMZ Intrusion Prevention",
+          "name": "DMZ Intrusion Prevention req2345",
           "id": "005056BF-7B88-0ed3-0000-017187505013",
           "type": "IntrusionPolicy",
           "inspectionMode": "DETECTION"
@@ -29678,7 +29824,96 @@
       },
       "id": "005056BF-7B88-0ed3-0000-021474994781"
     },
-    "rules": []
+    "rules": [
+      {
+        "metadata": {
+          "ruleIndex": 1,
+          "section": "Default",
+          "category": "--Undefined--",
+          "accessPolicy": {
+            "type": "AccessPolicy",
+            "name": "Prueba fmc api",
+            "defaultAction": {
+              "type": "AccessPolicyDefaultAction",
+              "logBegin": false,
+              "logEnd": false,
+              "enableSyslog": false,
+              "sendEventsToFMC": false
+            },
+            "id": "005056BF-7B88-0ed3-0000-021474994781"
+          },
+          "timestamp": 1759704484416,
+          "domain": {
+            "name": "Global",
+            "id": "e276abec-e0f2-11e3-8169-6d9ed49b625f",
+            "type": "Domain"
+          }
+        },
+        "links": {
+          "self": "https://fmcrestapisandbox.cisco.com/api/fmc_config/v1/domain/e276abec-e0f2-11e3-8169-6d9ed49b625f/policy/accesspolicies/005056BF-7B88-0ed3-0000-021474994781/accessrules/005056BF-7B88-0ed3-0000-000268441607"
+        },
+        "action": "ALLOW",
+        "name": "REQ234567_linux",
+        "type": "AccessRule",
+        "enabled": true,
+        "id": "005056BF-7B88-0ed3-0000-000268441607",
+        "vlanTags": {},
+        "logBegin": false,
+        "logEnd": false,
+        "variableSet": {
+          "name": "Default-Set",
+          "id": "76fa83ea-c972-11e2-8be8-8e45bb1343c0",
+          "type": "VariableSet"
+        },
+        "logFiles": false,
+        "sourcePorts": {
+          "objects": [
+            {
+              "type": "ProtocolPortObject",
+              "protocol": "TCP",
+              "overridable": false,
+              "name": "1236",
+              "id": "005056BF-7B88-0ed3-0000-012888029844"
+            }
+          ]
+        },
+        "destinationPorts": {
+          "objects": [
+            {
+              "type": "ProtocolPortObject",
+              "protocol": "TCP",
+              "overridable": false,
+              "name": "1236",
+              "id": "005056BF-7B88-0ed3-0000-012888029844"
+            }
+          ]
+        },
+        "enableSyslog": false,
+        "sourceNetworks": {
+          "objects": [
+            {
+              "type": "Host",
+              "overridable": false,
+              "name": "172.16.1.129",
+              "id": "005056BF-7B88-0ed3-0000-012885263747"
+            }
+          ]
+        },
+        "destinationNetworks": {
+          "objects": [
+            {
+              "type": "Host",
+              "overridable": false,
+              "name": "192.168.0.251",
+              "id": "005056BF-7B88-0ed3-0000-012889590648"
+            }
+          ]
+        },
+        "sendEventsToFMC": false,
+        "sourceDynamicObjects": {},
+        "destinationDynamicObjects": {}
+      }
+    ]
   },
   {
     "policy": {
