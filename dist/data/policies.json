@@ -377,7 +377,7 @@
           "literals": [
             {
               "type": "Host",
-              "value": "10.38.16.18"
+              "value": "10.38.16.19"
             }
           ]
         },
@@ -1076,7 +1076,7 @@
         "id": "005056BF-7B88-0ed3-0000-000268435521",
         "vlanTags": {},
         "ipsPolicy": {
-          "name": "DMZ Intrusion Prevention",
+          "name": "DMZ Intrusion Prevention req2345",
           "id": "005056BF-7B88-0ed3-0000-017187505013",
           "type": "IntrusionPolicy",
           "inspectionMode": "DETECTION"

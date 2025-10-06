@@ -149,4 +149,5 @@ export interface ChangeHistoryEntry {
   baselineLabel: string;
   currentLabel: string;
   report: RuleChangeReport;
+  note?: string;
 }

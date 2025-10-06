@@ -42,6 +42,80 @@
       </div>
     </header>
 
+    <section
+      v-if="pendingBaseline && pendingBaselineDiff"
+      class="space-y-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100"
+    >
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 class="text-lg font-semibold text-amber-100">Validacion de nuevo baseline</h3>
+          <p class="text-xs text-amber-200">
+            Comparando "{{ baselineLabel }}" con "{{ pendingBaseline.label }}".
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs">
+          <button
+            class="rounded-md border border-amber-200/60 bg-amber-200/10 px-3 py-2 font-semibold text-amber-50 hover:bg-amber-200/20"
+            @click="confirmPendingBaseline"
+          >
+            Reemplazar baseline
+          </button>
+          <button
+            class="rounded-md border border-amber-200/60 px-3 py-2 text-amber-50 hover:bg-amber-200/10"
+            @click="cancelPendingBaseline"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-3">
+        <div :class="statClass(pendingBaselineDiff.summary.addedRules, 'emerald')">
+          <p class="text-[11px] uppercase tracking-wide text-amber-200">Reglas nuevas en baseline</p>
+          <p class="text-lg font-semibold text-amber-50">{{ pendingBaselineDiff.summary.addedRules }}</p>
+        </div>
+        <div :class="statClass(pendingBaselineDiff.summary.removedRules, 'rose')">
+          <p class="text-[11px] uppercase tracking-wide text-amber-200">Reglas que se perderan</p>
+          <p class="text-lg font-semibold text-amber-50">{{ pendingBaselineDiff.summary.removedRules }}</p>
+        </div>
+        <div :class="statClass(pendingBaselineDiff.summary.modifiedRules, 'sky')">
+          <p class="text-[11px] uppercase tracking-wide text-amber-200">Reglas con cambios</p>
+          <p class="text-lg font-semibold text-amber-50">{{ pendingBaselineDiff.summary.modifiedRules }}</p>
+        </div>
+      </div>
+      <div class="space-y-2 text-[11px] text-amber-200">
+        <div v-if="pendingBaselineDiff.added.length">
+          <p class="font-semibold text-amber-100">Reglas nuevas</p>
+          <ul class="list-disc space-y-1 pl-4">
+            <li v-for="rule in pendingBaselineDiff.added.slice(0, 3)" :key="'pending-add-' + rule.policyId + rule.ruleId">
+              {{ rule.policyName }} - {{ rule.ruleName }}
+            </li>
+          </ul>
+          <p v-if="pendingBaselineDiff.added.length > 3" class="italic text-amber-300">... y {{ pendingBaselineDiff.added.length - 3 }} mas.</p>
+        </div>
+        <div v-if="pendingBaselineDiff.removed.length">
+          <p class="font-semibold text-amber-100">Reglas que se eliminaran</p>
+          <ul class="list-disc space-y-1 pl-4">
+            <li v-for="rule in pendingBaselineDiff.removed.slice(0, 3)" :key="'pending-rem-' + rule.policyId + rule.ruleId">
+              {{ rule.policyName }} - {{ rule.ruleName }}
+            </li>
+          </ul>
+          <p v-if="pendingBaselineDiff.removed.length > 3" class="italic text-amber-300">... y {{ pendingBaselineDiff.removed.length - 3 }} mas.</p>
+        </div>
+        <div v-if="pendingBaselineDiff.modified.length">
+          <p class="font-semibold text-amber-100">Cambios relevantes</p>
+          <ul class="list-disc space-y-1 pl-4">
+            <li
+              v-for="item in pendingBaselineDiff.modified.slice(0, 3)"
+              :key="'pending-mod-' + item.key"
+            >
+              {{ item.policyName }} - {{ item.ruleName }} ({{ item.changes.length }} campos)
+            </li>
+          </ul>
+          <p v-if="pendingBaselineDiff.modified.length > 3" class="italic text-amber-300">... y {{ pendingBaselineDiff.modified.length - 3 }} mas.</p>
+        </div>
+      </div>
+    </section>
+
     <section class="grid gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-300">
       <div class="flex flex-col gap-1">
         <span class="text-xs uppercase tracking-wide text-slate-500">Baseline actual</span>
@@ -80,8 +154,39 @@
       </div>
     </section>
 
+    <TrendChart v-if="historyForChart.length" :history="historyForChart" />
+
     <section v-if="report" class="space-y-6">
-      <div>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs uppercase tracking-wide text-slate-500">Filtros rapidos:</span>
+        <button :class="filterButtonClass('all')" @click="selectFilter('all')">Todos</button>
+        <button :class="filterButtonClass('added')" @click="selectFilter('added')">Solo agregadas</button>
+        <button :class="filterButtonClass('removed')" @click="selectFilter('removed')">Solo eliminadas</button>
+        <button :class="filterButtonClass('critical')" @click="selectFilter('critical')">Modificaciones criticas</button>
+      </div>
+
+      <section class="space-y-2 rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-xs text-slate-300">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="text-[11px] uppercase tracking-wide text-slate-500">Nota del analista</span>
+          <span v-if="noteStatus === 'saved'" class="text-[11px] text-emerald-400">Nota guardada</span>
+        </div>
+        <textarea
+          v-model="analystNote"
+          class="h-24 w-full rounded-md border border-slate-700 bg-slate-900/60 p-2 text-sm text-slate-200 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          placeholder="Describe decisiones, contexto o pasos a seguir..."
+        ></textarea>
+        <div class="flex justify-end">
+          <button
+            class="rounded-md border border-sky-500/60 px-3 py-2 text-xs text-sky-200 hover:bg-sky-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="!currentHistoryEntry"
+            @click="saveAnalystNote"
+          >
+            Guardar nota
+          </button>
+        </div>
+      </section>
+
+      <div v-if="shouldShowSection('added')">
         <h3 class="text-lg font-semibold text-slate-200">Reglas agregadas ({{ report.summary.addedRules }})</h3>
         <p class="text-xs text-slate-400" v-if="!report.added.length">No se detectaron reglas nuevas.</p>
         <div class="space-y-3" v-else>
@@ -96,7 +201,7 @@
         </div>
       </div>
 
-      <div>
+      <div v-if="shouldShowSection('removed')">
         <h3 class="text-lg font-semibold text-slate-200">Reglas eliminadas ({{ report.summary.removedRules }})</h3>
         <p class="text-xs text-slate-400" v-if="!report.removed.length">No se eliminaron reglas.</p>
         <div class="space-y-3" v-else>
@@ -111,11 +216,17 @@
         </div>
       </div>
 
-      <div>
-        <h3 class="text-lg font-semibold text-slate-200">Reglas modificadas ({{ report.summary.modifiedRules }})</h3>
-        <p class="text-xs text-slate-400" v-if="!report.modified.length">No se detectaron cambios en reglas existentes.</p>
+      <div v-if="shouldShowSection('modified')">
+        <h3 class="text-lg font-semibold text-slate-200">
+          Reglas modificadas ({{
+            activeFilter === 'critical' ? filteredModified.length : report.summary.modifiedRules
+          }})
+        </h3>
+        <p class="text-xs text-slate-400" v-if="!filteredModified.length">
+          {{ activeFilter === 'critical' ? 'No se detectaron modificaciones criticas (accion/estado).' : 'No se detectaron cambios en reglas existentes.' }}
+        </p>
         <div class="space-y-4" v-else>
-          <details v-for="item in report.modified" :key="'mod-' + item.key" class="rounded-lg border border-sky-500/30 bg-sky-500/10" open>
+          <details v-for="item in filteredModified" :key="'mod-' + item.key" class="rounded-lg border border-sky-500/30 bg-sky-500/10" open>
             <summary class="cursor-pointer px-3 py-2 text-sm font-medium text-sky-200">
               {{ item.policyName }} - {{ item.ruleName }}
             </summary>
@@ -168,6 +279,7 @@
           </summary>
           <div class="space-y-2 px-3 pb-3 text-xs text-slate-300">
             <p>Total actual: {{ entry.report.summary.totalCurrentRules }} - Baseline: {{ entry.report.summary.totalBaselineRules }}</p>
+            <p v-if="entry.note" class="text-[11px] text-emerald-300">Nota: {{ entry.note }}</p>
             <div v-if="entry.report.modified.length" class="space-y-2">
               <p class="text-slate-400">Cambios destacados:</p>
               <ul class="text-[11px] text-slate-400">
@@ -184,10 +296,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, withDefaults } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch, withDefaults } from "vue";
 import type { ChangeHistoryEntry, ModifiedRuleChange, RuleChangeReport, RuleRow } from "../types";
 import { diffRuleSets } from "../utils/ruleDiff";
 import RuleSummary from "./RuleSummary.vue";
+import TrendChart from "./TrendChart.vue";
 import { flattenPolicies } from "../composables/usePolicies";
 
 type BaselineSource = "default" | "upload";
@@ -195,6 +308,13 @@ type BaselineSource = "default" | "upload";
 interface BaselineMeta {
   label: string;
   source: BaselineSource;
+  loadedAt: string;
+}
+
+interface PendingBaseline {
+  label: string;
+  source: BaselineSource;
+  rules: RuleRow[];
   loadedAt: string;
 }
 
@@ -239,6 +359,7 @@ const baselineRules = ref<RuleRow[]>([]);
 const baselineMeta = ref<BaselineMeta | null>(null);
 const baselineError = ref<string | null>(null);
 const loadingBaseline = ref(false);
+const pendingBaseline = ref<PendingBaseline | null>(null);
 
 const baselineLabel = computed(() => baselineMeta.value?.label ?? "Sin baseline");
 
@@ -262,6 +383,71 @@ const canExportCsv = computed(() => {
 
 const history = ref<ChangeHistoryEntry[]>(loadHistory());
 
+const activeFilter = ref<"all" | "added" | "removed" | "critical">("all");
+const analystNote = ref("");
+const noteStatus = ref<"idle" | "saved">("idle");
+let noteStatusTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const currentReportId = computed(() => {
+  const current = report.value;
+  if (!current) {
+    return null;
+  }
+  return `${current.baselineHash}|${current.currentHash}`;
+});
+
+const currentHistoryEntry = computed(() => {
+  const id = currentReportId.value;
+  if (!id) {
+    return null;
+  }
+  return history.value.find((entry) => entry.id === id) ?? null;
+});
+
+const historyForChart = computed(() => {
+  if (!history.value.length) {
+    return [];
+  }
+  return [...history.value].slice(0, 12).reverse();
+});
+
+const filteredModified = computed(() => {
+  const current = report.value;
+  if (!current) {
+    return [];
+  }
+  if (activeFilter.value === "critical") {
+    return current.modified.filter(hasCriticalChange);
+  }
+  return current.modified;
+});
+
+const hasCurrentData = computed(() => Boolean(report.value));
+const pendingBaselineDiff = computed<RuleChangeReport | null>(() => {
+  if (!pendingBaseline.value || !baselineRules.value.length) {
+    return null;
+  }
+  const diff = diffRuleSets(pendingBaseline.value.rules, baselineRules.value);
+  diff.baselineLabel = baselineLabel.value;
+  diff.currentLabel = pendingBaseline.value.label;
+  return diff;
+});
+
+watch(
+  currentHistoryEntry,
+  (entry) => {
+    analystNote.value = entry?.note ?? "";
+  },
+  { immediate: true }
+);
+
+watch(
+  () => report.value,
+  () => {
+    activeFilter.value = "all";
+  }
+);
+
 watch(
   () => report.value,
   (current) => {
@@ -269,7 +455,10 @@ watch(
       return;
     }
     const id = `${current.baselineHash}|${current.currentHash}`;
-    if (history.value.some((entry) => entry.id === id)) {
+    const existing = history.value.find((entry) => entry.id === id);
+    if (existing) {
+      analystNote.value = existing.note ?? "";
+      noteStatus.value = "idle";
       return;
     }
     history.value.unshift({
@@ -278,9 +467,12 @@ watch(
       baselineLabel: current.baselineLabel,
       currentLabel: current.currentLabel,
       report: current,
+      note: analystNote.value.trim() || undefined,
     });
     history.value = history.value.slice(0, 20);
     saveHistory();
+    analystNote.value = analystNote.value.trim();
+    noteStatus.value = "idle";
   }
 );
 
@@ -320,6 +512,7 @@ function saveHistory() {
 function clearHistory() {
   history.value = [];
   localStorage.removeItem(HISTORY_KEY);
+  analystNote.value = "";
 }
 
 function formatDate(value: string): string {
@@ -360,6 +553,39 @@ const BOOLEAN_FIELDS = new Set<keyof RuleRow>([
   "enableSyslog",
   "sendEventsToFMC",
 ]);
+
+function hasCriticalChange(item: ModifiedRuleChange): boolean {
+  return item.changes.some((change) => change.field === "action" || change.field === "enabled");
+}
+
+function shouldShowSection(section: "added" | "removed" | "modified"): boolean {
+  if (activeFilter.value === "all") {
+    return true;
+  }
+  if (activeFilter.value === "added") {
+    return section === "added";
+  }
+  if (activeFilter.value === "removed") {
+    return section === "removed";
+  }
+  if (activeFilter.value === "critical") {
+    return section === "modified";
+  }
+  return true;
+}
+
+function selectFilter(filter: "all" | "added" | "removed" | "critical") {
+  activeFilter.value = filter;
+}
+
+function filterButtonClass(filter: "all" | "added" | "removed" | "critical"): string {
+  const base = "rounded-md border px-3 py-2 text-xs transition";
+  const isActive = activeFilter.value === filter;
+  if (isActive) {
+    return `${base} border-sky-500/60 bg-sky-500/20 text-sky-100`;
+  }
+  return `${base} border-slate-700 text-slate-300 hover:bg-slate-800`;
+}
 
 function describeAddedRule(rule: RuleRow): string[] {
   const lines: string[] = [];
@@ -487,6 +713,27 @@ function formatListForSentence(values: string[]): string {
   return `${values.slice(0, -1).join(", ")} y ${values[values.length - 1]}`;
 }
 
+function saveAnalystNote() {
+  const entry = currentHistoryEntry.value;
+  if (!entry) {
+    return;
+  }
+  const trimmed = analystNote.value.trim();
+  history.value = history.value.map((item) =>
+    item.id === entry.id ? { ...item, note: trimmed || undefined } : item
+  );
+  analystNote.value = trimmed;
+  saveHistory();
+  noteStatus.value = "saved";
+  if (noteStatusTimeout) {
+    clearTimeout(noteStatusTimeout);
+  }
+  noteStatusTimeout = setTimeout(() => {
+    noteStatus.value = "idle";
+    noteStatusTimeout = null;
+  }, 2000);
+}
+
 function exportCsvReport() {
   const current = report.value;
   if (!current || !canExportCsv.value) {
@@ -494,6 +741,9 @@ function exportCsvReport() {
   }
 
   const rows: string[][] = [];
+  const exportNote = analystNote.value.trim() || currentHistoryEntry.value?.note || "";
+  const exportTimestamp = currentHistoryEntry.value?.timestamp ?? new Date().toISOString();
+  const exportDate = formatTimestampForCsv(exportTimestamp);
   rows.push([
     "Tipo",
     "Politica",
@@ -510,19 +760,29 @@ function exportCsvReport() {
     "Aplicaciones",
     "Comentarios",
     "Cambios",
+    "Fecha comparacion",
+    "Nota",
   ]);
 
   current.added.forEach((rule) => {
-    rows.push(buildCsvRow(rule, "Agregada", describeAddedRule(rule)));
+    rows.push(buildCsvRow(rule, "Agregada", describeAddedRule(rule), exportDate, exportNote));
   });
 
   current.modified.forEach((item) => {
     const description = describeModifiedRuleChange(item);
-    rows.push(buildCsvRow(item.current, "Modificada", description.length ? description : ["Cambios detectados"]));
+    rows.push(
+      buildCsvRow(
+        item.current,
+        "Modificada",
+        description.length ? description : ["Cambios detectados"],
+        exportDate,
+        exportNote
+      )
+    );
   });
 
   current.removed.forEach((rule) => {
-    rows.push(buildCsvRow(rule, "Eliminada", describeRemovedRule(rule)));
+    rows.push(buildCsvRow(rule, "Eliminada", describeRemovedRule(rule), exportDate, exportNote));
   });
 
   if (rows.length === 1) {
@@ -546,7 +806,7 @@ function exportCsvReport() {
   URL.revokeObjectURL(url);
 }
 
-function buildCsvRow(rule: RuleRow, type: string, changeSummary: string[]): string[] {
+function buildCsvRow(rule: RuleRow, type: string, changeSummary: string[], date: string, note: string): string[] {
   return [
     type,
     rule.policyName || "-",
@@ -563,6 +823,8 @@ function buildCsvRow(rule: RuleRow, type: string, changeSummary: string[]): stri
     formatListForCsv(rule.applications),
     formatCommentsForCsv(rule.comments),
     changeSummary.length ? changeSummary.join(" | ") : "-",
+    date || "-",
+    note || "-",
   ];
 }
 
@@ -610,6 +872,14 @@ function escapeCsvValue(value: string): string {
   return `"${safeValue.replace(/"/g, '""')}"`;
 }
 
+function formatTimestampForCsv(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleString();
+}
+
 function formatDateSuffix(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -618,6 +888,41 @@ function formatDateSuffix(date: Date): string {
   const minutes = String(date.getMinutes()).padStart(2, "0");
   const seconds = String(date.getSeconds()).padStart(2, "0");
   return `${year}${month}${day}-${hours}${minutes}${seconds}`;
+}
+
+function queueBaseline(rules: RuleRow[], label: string, source: BaselineSource) {
+  if (!baselineRules.value.length) {
+    applyBaseline(rules, label, source);
+    return;
+  }
+  pendingBaseline.value = {
+    rules,
+    label,
+    source,
+    loadedAt: new Date().toISOString(),
+  };
+}
+
+function applyBaseline(rules: RuleRow[], label: string, source: BaselineSource) {
+  baselineRules.value = rules;
+  baselineMeta.value = {
+    label,
+    source,
+    loadedAt: new Date().toISOString(),
+  };
+  pendingBaseline.value = null;
+}
+
+function confirmPendingBaseline() {
+  const pending = pendingBaseline.value;
+  if (!pending) {
+    return;
+  }
+  applyBaseline(pending.rules, pending.label, pending.source);
+}
+
+function cancelPendingBaseline() {
+  pendingBaseline.value = null;
 }
 
 async function reloadDefaultBaseline() {
@@ -629,7 +934,7 @@ async function reloadDefaultBaseline() {
       throw new Error(`No se encontró el archivo ${BASELINE_URL}`);
     }
     const payload = await response.json();
-    assignBaseline(flattenFromSnapshot(payload), "Baseline por defecto", "default");
+    queueBaseline(flattenFromSnapshot(payload), "Baseline por defecto", "default");
   } catch (error) {
     baselineRules.value = [];
     baselineMeta.value = null;
@@ -653,7 +958,7 @@ function handleFileUpload(event: Event) {
   reader.onload = () => {
     try {
       const payload = JSON.parse(String(reader.result));
-      assignBaseline(flattenFromSnapshot(payload), `Archivo: ${file.name}`, "upload");
+      queueBaseline(flattenFromSnapshot(payload), `Archivo: ${file.name}`, "upload");
       baselineError.value = null;
     } catch (error) {
       baselineError.value = "El archivo no tiene el formato esperado.";
@@ -666,15 +971,6 @@ function handleFileUpload(event: Event) {
   target.value = "";
 }
 
-function assignBaseline(rules: RuleRow[], label: string, source: BaselineSource) {
-  baselineRules.value = rules;
-  baselineMeta.value = {
-    label,
-    source,
-    loadedAt: new Date().toISOString(),
-  };
-}
-
 function flattenFromSnapshot(payload: unknown): RuleRow[] {
   if (Array.isArray(payload)) {
     return flattenPolicies(payload as any);
@@ -684,6 +980,13 @@ function flattenFromSnapshot(payload: unknown): RuleRow[] {
   }
   throw new Error("El snapshot no tiene el formato esperado");
 }
+
+onBeforeUnmount(() => {
+  if (noteStatusTimeout) {
+    clearTimeout(noteStatusTimeout);
+    noteStatusTimeout = null;
+  }
+});
 
 onMounted(() => {
   void reloadDefaultBaseline();
